@@ -5,7 +5,7 @@ import express from 'express';
 import expressValidator from 'express-validator';
 import jwt from 'jsonwebtoken';
 import moment from 'moment';
-import util from 'util';
+//import util from 'util';
 import xjwt from 'express-jwt';
 import config from './config';
 
@@ -96,11 +96,12 @@ export default function loansApiServer(port = 3000, db) {
     });
 
     server.get('/application/offer', (req, res) => {
-        console.log(`query: ${util.inspect(req.query)}`);
         req.sanitizeQuery('amount').toInt();
         req.sanitizeQuery('term').toInt();
-        req.checkQuery('amount', 'Amount should be an integer between 100 and 1000').isInt({ min: 100, max: 1000 });
-        req.checkQuery('term', 'Term should be an integer between 10 and 30').isInt({ min: 10, max: 30 });
+        req.checkQuery('amount', 'Amount should be an integer between 100 and 1000').isInt({ min: 100, max: 1000 })
+            .notEmpty().withMessage('Amount cannot be empty');
+        req.checkQuery('term', 'Term should be an integer between 10 and 30').isInt({ min: 10, max: 30 })
+            .notEmpty().withMessage('Term cannot be empty');
         const validationErrors = req.validationErrors();
         if (validationErrors) {
             res.status(400).send(validationErrors);

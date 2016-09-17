@@ -105,6 +105,32 @@ describe('loans api', () => {
                 dueDate: moment().add(15, 'days').format('YYYY-DD-MM')
             });
         });
+
+        it('invalid query for an offer with no params', async () => {
+            try {
+                await getUnauthorized('/application/offer').promise;
+            } catch (err) {
+                err.message.should.equal('Bad Request');
+                err.response.body.should.have.lengthOf(4);
+                err.response.body.filter((item) => item.param === 'amount' && item.msg === 'Amount cannot be empty')
+                    .should.have.lengthOf(1);
+                err.response.body.filter((item) => item.param === 'term' && item.msg === 'Term cannot be empty')
+                    .should.have.lengthOf(1);
+            }
+        });
+
+        it('query for an offer with invalid params', async () => {
+            try {
+                await getUnauthorized('/application/offer?amount=3000&term=50').promise;
+            } catch (err) {
+                err.message.should.equal('Bad Request');
+                err.response.body.should.have.lengthOf(2);
+                err.response.body.filter((item) => item.param === 'amount' && item.msg === 'Amount should be an integer between 100 and 1000')
+                    .should.have.lengthOf(1);
+                err.response.body.filter((item) => item.param === 'term' && item.msg === 'Term should be an integer between 10 and 30')
+                    .should.have.lengthOf(1);
+            }
+        });
     });
 });
 

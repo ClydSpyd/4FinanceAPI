@@ -1,3 +1,4 @@
 export default {
-    "secret": "Anastasija"
+    "secret": "Anastasija",
+    "interest": 0.1
 };

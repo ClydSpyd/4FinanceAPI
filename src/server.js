@@ -4,9 +4,10 @@ import bodyParser from 'body-parser';
 import express from 'express';
 import expressValidator from 'express-validator';
 import jwt from 'jsonwebtoken';
-import moment from 'moment';
+//import moment from 'moment';
 //import util from 'util';
 import xjwt from 'express-jwt';
+import { attachDefaultValidations, createApplication } from './application.js';
 import config from './config';
 
 install();
@@ -96,28 +97,26 @@ export default function loansApiServer(port = 3000, db) {
     });
 
     server.get('/application/offer', (req, res) => {
-        req.sanitizeQuery('amount').toInt();
-        req.sanitizeQuery('term').toInt();
-        req.checkQuery('amount', 'Amount should be an integer between 100 and 1000').isInt({ min: 100, max: 1000 })
-            .notEmpty().withMessage('Amount cannot be empty');
-        req.checkQuery('term', 'Term should be an integer between 10 and 30').isInt({ min: 10, max: 30 })
-            .notEmpty().withMessage('Term cannot be empty');
+        attachDefaultValidations(req);
         const validationErrors = req.validationErrors();
         if (validationErrors) {
             res.status(400).send(validationErrors);
             return;
         }
-        const amount = req.query.amount;
-        const term = req.query.term;
-        const interest = amount * 0.1;
-        const totalAmount = amount + interest;
-        const dueDate = moment().add(term, 'days').format('YYYY-DD-MM');
-        res.status(200).send({
-            principalAmount: amount,
-            interestAmount: interest,
-            totalAmount: totalAmount,
-            dueDate: dueDate
-        });
+        const application = createApplication(req.query.amount, req.query.term);
+        res.status(200).send(application);
+    });
+
+    server.post('/clients/application', (req, res) => {
+        attachDefaultValidations(req);
+        const validationErrors = req.validationErrors();
+        if (validationErrors) {
+            res.status(400).send(validationErrors);
+            return;
+        }
+        const application = createApplication(req.query.amount, req.query.term);
+
+        res.status(201).send(application);
     });
 
     return server.listen(port, () => console.log('JSON server is running.'));

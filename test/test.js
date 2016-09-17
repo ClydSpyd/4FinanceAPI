@@ -102,6 +102,7 @@ describe('loans api', () => {
                 principalAmount: 500,
                 interestAmount: 50,
                 totalAmount: 550,
+                term: 15,
                 dueDate: moment().add(15, 'days').format('YYYY-DD-MM')
             });
         });
@@ -130,6 +131,25 @@ describe('loans api', () => {
                 err.response.body.filter((item) => item.param === 'term' && item.msg === 'Term should be an integer between 10 and 30')
                     .should.have.lengthOf(1);
             }
+        });
+
+        it('a client should be authorized to be able to apply', async () => {
+            try {
+                await getUnauthorized('/clients/application?amount=500&term=15').promise;
+            } catch (err) {
+                err.response.status.should.equal(httpstatus.UNAUTHORIZED);
+            }
+        });
+
+        it('application is applied for', async () => {
+            let key = await login('petras@mail.lt', 'pass').promise;
+            key.should.be.ok;
+            key.status.should.equal(httpstatus.CREATED);
+
+            const resp = await applyForLoan(500, 15).promise;
+            resp.status.should.equal(httpstatus.CREATED);
+            resp.body.should.contain.property('principalAmount', 500);
+            resp.body.should.contain.property('term', 15);
         });
     });
 });
@@ -175,6 +195,15 @@ function getClient(key) {
     };
 }
 
+function applyForLoan(amount, term, key) {
+    async function getPromise() {
+        return await request.post(`http://localhost:3000/clients/application?amount=${amount}&term=${term}`)
+            .set('Authorization', `Bearer ${key}`);
+    }
+    return {
+        promise: getPromise()
+    };
+}
 
 const defaultData = {
     "clients": [

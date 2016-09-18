@@ -5,6 +5,7 @@ import httpstatus from 'http-status';
 import lowdb from 'lowdb';
 import moment from 'moment';
 import request from 'superagent';
+import util from 'util';
 import loansApiServer from '../src/server.js';
 install();
 
@@ -14,8 +15,11 @@ let db;
 describe('loans api', () => {
     before(() => {
         db = lowdb();
-        db.setState(defaultData);
         loansApiServer(3000, db);
+    });
+
+    beforeEach(() => {
+        db.setState(JSON.parse(defaultData));
     });
 
     describe('login a client', () => {
@@ -102,8 +106,7 @@ describe('loans api', () => {
                 principalAmount: 500,
                 interestAmount: 50,
                 totalAmount: 550,
-                term: 15,
-                dueDate: moment().add(15, 'days').format('YYYY-DD-MM')
+                dueDate: moment().add(15, 'days').format('YYYY-MM-DD')
             });
         });
 
@@ -146,10 +149,33 @@ describe('loans api', () => {
             key.should.be.ok;
             key.status.should.equal(httpstatus.CREATED);
 
-            const resp = await applyForLoan(500, 15).promise;
+            const resp = await applyForLoan(500, 15, key.text).promise;
             resp.status.should.equal(httpstatus.CREATED);
             resp.body.should.contain.property('principalAmount', 500);
             resp.body.should.contain.property('term', 15);
+        });
+
+    });
+
+    describe('Business errors while applying for a loan', () => {
+        it('application was applied for more than three times a day', async () => {
+            let token = await login('petras@mail.lt', 'pass').promise;
+            token.should.be.ok;
+            token.status.should.equal(httpstatus.CREATED);
+
+            await applyForLoan(500, 15, token.text).promise;
+            await applyForLoan(500, 15, token.text).promise;
+            await applyForLoan(500, 15, token.text).promise;
+            try {
+                await applyForLoan(500, 15, token.text).promise;
+            } catch (err) {
+                err.response.status.should.equal(httpstatus.BAD_REQUEST);
+                err.response.body.should.be.lengthOf(1);
+                err.response.body.should.deep.equal([{
+                    msg: 'Too many applications for one day'
+                }]);
+                console.log(`error body: ${util.inspect(err.response.body)}`);
+            }
         });
     });
 });
@@ -205,7 +231,7 @@ function applyForLoan(amount, term, key) {
     };
 }
 
-const defaultData = {
+const defaultData = `{
     "clients": [
         {
             "id": 1,
@@ -224,4 +250,4 @@ const defaultData = {
             "password": "pass"
         }
     ]
-};
+}`;

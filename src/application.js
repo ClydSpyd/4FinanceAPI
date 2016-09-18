@@ -10,15 +10,21 @@ export function attachDefaultValidations(req) {
         .notEmpty().withMessage('Term cannot be empty');
 }
 
-export function createApplication(amount, term) {
+export function createOffer(amount, term) {
     const interest = amount * config.interest;
     const totalAmount = amount + interest;
-    const dueDate = moment().add(term, 'days').format('YYYY-DD-MM');
+    const dueDate = moment().add(term, 'days').format(config.dateFormat);
     return {
         principalAmount: amount,
         interestAmount: interest,
         totalAmount: totalAmount,
-        dueDate: dueDate,
-        term: term
+        dueDate: dueDate
     };
+}
+
+export function createApplication(amount, term) {
+    let application = createOffer(amount, term);
+    application.term = term;
+    application.created = moment().format(config.dateFormat);
+    return application;
 }

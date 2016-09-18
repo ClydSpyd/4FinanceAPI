@@ -4,10 +4,11 @@ import bodyParser from 'body-parser';
 import express from 'express';
 import expressValidator from 'express-validator';
 import jwt from 'jsonwebtoken';
-//import moment from 'moment';
+import moment from 'moment';
 //import util from 'util';
 import xjwt from 'express-jwt';
-import { attachDefaultValidations, createApplication } from './application.js';
+import { attachDefaultValidations, createApplication, createOffer } from './application';
+import { getEmailFromToken } from './authorization';
 import config from './config';
 
 install();
@@ -103,7 +104,7 @@ export default function loansApiServer(port = 3000, db) {
             res.status(400).send(validationErrors);
             return;
         }
-        const application = createApplication(req.query.amount, req.query.term);
+        const application = createOffer(req.query.amount, req.query.term);
         res.status(200).send(application);
     });
 
@@ -115,6 +116,21 @@ export default function loansApiServer(port = 3000, db) {
             return;
         }
         const application = createApplication(req.query.amount, req.query.term);
+        const email = getEmailFromToken(req);
+        const client = db.get('clients').find({ email: email });
+        const applicationsToday = client.get('applications')
+            .filter({ created: moment().format(config.dateFormat) })
+            .size()
+            .value();
+        if (applicationsToday === 3) {
+            res.status(400).send([{
+                msg: 'Too many applications for one day'
+            }]);
+            return;
+        }
+        const applications = client.get('applications', []).concat(application).value();
+        // call value in order to persist changes to database
+        client.assign({ 'applications': applications }).value();
 
         res.status(201).send(application);
     });

@@ -5,7 +5,7 @@ import express from 'express';
 import expressValidator from 'express-validator';
 import jwt from 'jsonwebtoken';
 import moment from 'moment';
-//import util from 'util';
+import util from 'util';
 import xjwt from 'express-jwt';
 import { attachDefaultValidations, createApplication, createOffer } from './application';
 import { getEmailFromToken } from './authorization';
@@ -81,20 +81,7 @@ export default function loansApiServer(port = 3000, db) {
     });
 
     server.get('/application/constraints', (req, res) => {
-        res.status(200).send({
-            amountInterval: {
-                min: 100,
-                max: 1000,
-                defaultValue: 100,
-                step: 50
-            },
-            termInterval: {
-                min: 10,
-                max: 31,
-                defaultValue: 10,
-                step: 1
-            }
-        });
+        res.status(200).send(config.intervals);
     });
 
     server.get('/application/offer', (req, res) => {
@@ -128,9 +115,13 @@ export default function loansApiServer(port = 3000, db) {
             }]);
             return;
         }
-        const applications = client.get('applications', []).concat(application).value();
+        const applications = client.get('applications', []);
+        // make it persist
+        applications.last().assign({ status: 'CANCELLED' }).value();
+        const updatedApplications = applications.concat(application).value();
         // call value in order to persist changes to database
-        client.assign({ 'applications': applications }).value();
+        client.assign({ 'applications': updatedApplications }).value();
+        console.log(`client: ${util.inspect(client.value())}`);
 
         res.status(201).send(application);
     });

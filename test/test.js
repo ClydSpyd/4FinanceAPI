@@ -164,10 +164,10 @@ describe('loans api', () => {
             token.status.should.equal(httpstatus.CREATED);
 
             await applyForLoan(500, 15, token.text).promise;
-            await applyForLoan(500, 15, token.text).promise;
-            await applyForLoan(500, 15, token.text).promise;
+            await applyForLoan(501, 16, token.text).promise;
+            await applyForLoan(502, 17, token.text).promise;
             try {
-                await applyForLoan(500, 15, token.text).promise;
+                await applyForLoan(503, 18, token.text).promise;
             } catch (err) {
                 err.response.status.should.equal(httpstatus.BAD_REQUEST);
                 err.response.body.should.be.lengthOf(1);

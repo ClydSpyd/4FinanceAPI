@@ -1,5 +1,6 @@
+import expressValidator from 'express-validator';
 import moment from 'moment';
-import config from './config.js';
+import config from './config';
 
 export function attachDefaultValidations(req) {
     req.sanitizeQuery('amount').toInt();
@@ -26,5 +27,21 @@ export function createApplication(amount, term) {
     let application = createOffer(amount, term);
     application.term = term;
     application.created = moment().format(config.dateFormat);
+    application.status = 'OPEN';
     return application;
+}
+
+export function customValidAmountValidator() {
+    return expressValidator({
+        customValidators: {
+            isValidAmountInDueTime: (value) => {
+                const now = moment();
+                return (value === config.intervals.amountInterval.max && now.isBetween(now.hour(0), now.hour(6)));
+            }
+        }
+    });
+}
+
+export function attachValidAmountValidator(req) {
+    req.checkQuery('amount', 'Amount can be max between 00:00 and 06:00').isValidAmountInDueTime();
 }

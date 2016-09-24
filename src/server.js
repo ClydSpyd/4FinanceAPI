@@ -121,9 +121,22 @@ export default function loansApiServer(port = 3000, db) {
         const updatedApplications = applications.concat(application).value();
         // call value in order to persist changes to database
         client.assign({ 'applications': updatedApplications }).value();
-        console.log(`client: ${util.inspect(client.value())}`);
 
         res.status(201).send(application);
+    });
+
+    server.get('/clients/application', (req, res) => {
+        const email = getEmailFromToken(req);
+        const lastApplication = db.get('clients').find({ email: email})
+            .get('applications')
+            .last()
+            .value();
+
+        if (!lastApplication) {
+            res.status(404).send();
+        }
+
+        res.status(200).send(lastApplication);
     });
 
     return server.listen(port, () => console.log('JSON server is running.'));

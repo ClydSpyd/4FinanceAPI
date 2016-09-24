@@ -155,6 +155,23 @@ describe('loans api', () => {
             resp.body.should.contain.property('term', 15);
         });
 
+        it('do not find the latest application', async () => {
+            try {
+                let resp = await getAuthorized('petras@mail.lt', 'pass', '/clients/application').promise;
+            } catch (err) {
+                err.response.status.should.equal(httpstatus.NOT_FOUND);
+            }
+        });
+
+        it('get the latest application', async () => {
+            const token = await login('petras@mail.lt', 'pass').promise;
+            const resp = await applyForLoan(500, 15, token.text).promise;
+
+            let applicationResponse = await getAuthorized('petras@mail.lt', 'pass', '/clients/application').promise;
+            applicationResponse.status.should.equal(httpstatus.OK);
+            applicationResponse.body.should.contain.property('principalAmount', 500);
+            applicationResponse.body.should.contain.property('term', 15);
+        })
     });
 
     describe('Business errors while applying for a loan', () => {
@@ -174,7 +191,6 @@ describe('loans api', () => {
                 err.response.body.should.deep.equal([{
                     msg: 'Too many applications for one day'
                 }]);
-                console.log(`error body: ${util.inspect(err.response.body)}`);
             }
         });
     });
@@ -225,6 +241,17 @@ function applyForLoan(amount, term, key) {
     async function getPromise() {
         return await request.post(`http://localhost:3000/clients/application?amount=${amount}&term=${term}`)
             .set('Authorization', `Bearer ${key}`);
+    }
+    return {
+        promise: getPromise()
+    };
+}
+
+function getAuthorized(username, password, path) {
+    async function getPromise() {
+        const token = await login(username, password).promise;
+        return await request.get(`http://localhost:3000${path}`)
+            .set('Authorization', `Bearer ${token.text}`);
     }
     return {
         promise: getPromise()

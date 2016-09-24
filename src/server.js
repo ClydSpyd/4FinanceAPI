@@ -4,16 +4,17 @@ import bodyParser from 'body-parser';
 import express from 'express';
 import expressValidator from 'express-validator';
 import jwt from 'jsonwebtoken';
-import moment from 'moment';
-import util from 'util';
+//import util from 'util';
 import xjwt from 'express-jwt';
 import { attachDefaultValidations, createApplication, createOffer } from './application';
 import { getEmailFromToken } from './authorization';
 import config from './config';
+import model from './model';
 
 install();
 
 export default function loansApiServer(port = 3000, db) {
+    const data = model(db);
     const server = express();
     server.use(bodyParser.json());
     server.use(expressValidator());
@@ -24,7 +25,7 @@ export default function loansApiServer(port = 3000, db) {
         const email = [req.body].filter((b) => b)
             .filter((b) => b.username && b.password)
             .map((body) => { 
-                return { password: body.password, client: db.get('clients').find({ email: req.body.username }).value() };
+                return { password: body.password, client: data.getClient(req.body.username) };
             })
             .filter((arr) => arr.client)
             .filter((arr) => arr.password === arr.client.password)
@@ -51,7 +52,7 @@ export default function loansApiServer(port = 3000, db) {
 
     server.get('/clients', (req, res) => {
         if (req.user) {
-            const client = db.get('clients').find({ email: req.user.email }).value();
+            const client = data.getClient(req.user.email);
             if (!client) {
                 res.status(400);
                 return;
@@ -76,7 +77,7 @@ export default function loansApiServer(port = 3000, db) {
             return;
         }
 
-        db.get('clients').push(req.body).value();
+        data.saveClient(req.body);
         res.status(201).send();
     });
 
@@ -104,39 +105,35 @@ export default function loansApiServer(port = 3000, db) {
         }
         const application = createApplication(req.query.amount, req.query.term);
         const email = getEmailFromToken(req);
-        const client = db.get('clients').find({ email: email });
-        const applicationsToday = client.get('applications')
-            .filter({ created: moment().format(config.dateFormat) })
-            .size()
-            .value();
+        const applicationsToday = data.getApplicationsTodayCount(email);
         if (applicationsToday === 3) {
             res.status(400).send([{
                 msg: 'Too many applications for one day'
             }]);
             return;
         }
-        const applications = client.get('applications', []);
-        // make it persist
-        applications.last().assign({ status: 'CANCELLED' }).value();
-        const updatedApplications = applications.concat(application).value();
-        // call value in order to persist changes to database
-        client.assign({ 'applications': updatedApplications }).value();
+        data.saveApplication(email, application);
 
         res.status(201).send(application);
     });
 
     server.get('/clients/application', (req, res) => {
         const email = getEmailFromToken(req);
-        const lastApplication = db.get('clients').find({ email: email})
-            .get('applications')
-            .last()
-            .value();
-
-        if (!lastApplication) {
+        const latestApplication = data.getLatestApplication(email);
+        if (!latestApplication) {
             res.status(404).send();
         }
 
-        res.status(200).send(lastApplication);
+        res.status(200).send(latestApplication);
+    });
+
+    server.put('clients/application', (req, res) => {
+        const email = getEmailFromToken(req);
+        const latestApplication = data.getLatestApplication(email);
+        if (!latestApplication) {
+            res.status(404).send();
+        }
+
     });
 
     return server.listen(port, () => console.log('JSON server is running.'));

@@ -6,7 +6,7 @@ import expressValidator from 'express-validator';
 import jwt from 'jsonwebtoken';
 //import util from 'util';
 import xjwt from 'express-jwt';
-import { attachDefaultValidations, createApplication, createOffer } from './application';
+import { attachDefaultValidations, createApplication, createOffer, isValidAmountInDueTime, isValidApplicationCountForADay } from './application';
 import { getEmailFromToken } from './authorization';
 import config from './config';
 import model from './model';
@@ -105,13 +105,6 @@ export default function loansApiServer(port = 3000, db) {
         }
         const application = createApplication(req.query.amount, req.query.term);
         const email = getEmailFromToken(req);
-        const applicationsToday = data.getApplicationsTodayCount(email);
-        if (applicationsToday === 3) {
-            res.status(400).send([{
-                msg: 'Too many applications for one day'
-            }]);
-            return;
-        }
         data.saveApplication(email, application);
 
         res.status(201).send(application);
@@ -134,6 +127,19 @@ export default function loansApiServer(port = 3000, db) {
             res.status(404).send();
         }
 
+        const applicationsToday = data.getApplicationsTodayCount(email);
+        if (!isValidApplicationCountForADay(applicationsToday)) {
+            res.status(400).send([{
+                msg: 'Too many applications for one day'
+            }]);
+            return;
+        }
+
+        if (!isValidAmountInDueTime(latestApplication.principalAmount)) {
+            res.status(400).send([{
+                msg: 'Max amount between midnight and 6 am not allowed'
+            }]);
+        }
     });
 
     return server.listen(port, () => console.log('JSON server is running.'));

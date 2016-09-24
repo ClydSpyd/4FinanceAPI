@@ -1,4 +1,3 @@
-import expressValidator from 'express-validator';
 import moment from 'moment';
 import config from './config';
 
@@ -31,17 +30,13 @@ export function createApplication(amount, term) {
     return application;
 }
 
-export function customValidAmountValidator() {
-    return expressValidator({
-        customValidators: {
-            isValidAmountInDueTime: (value) => {
-                const now = moment();
-                return (value === config.intervals.amountInterval.max && now.isBetween(now.hour(0), now.hour(6)));
-            }
-        }
-    });
+export function isValidAmountInDueTime(value) {
+    const now = moment();
+    const midnight = now.clone().hour(0);
+    const six = now.clone().hour(6);
+    return !(value === config.intervals.amountInterval.max && now.isBetween(midnight, six));
 }
 
-export function attachValidAmountValidator(req) {
-    req.checkQuery('amount', 'Amount can be max between 00:00 and 06:00').isValidAmountInDueTime();
+export function isValidApplicationCountForADay(count) {
+    return count < config.maxApplicationCountForADay;
 }

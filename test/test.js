@@ -78,9 +78,16 @@ describe('loans api', () => {
                 await saveClient('asasd').promise;
             } catch (err) {
                 err.response.body.should.have.lengthOf(8);
-                err.response.body.filter((item) => item.param === 'surname' && item.msg === 'The surname cannot be empty')
-                    .should.have.lengthOf(1);
-                //console.log(`Error: ${JSON.stringify(err.response)}`);
+                err.response.body.should.deep.equal([
+                        { param: 'surname', msg: 'The surname cannot be empty'},
+                        { param: 'email', msg: 'Email is required'},
+                        { param: 'email', msg: 'Invalid email'},
+                        { param: 'personalId', msg: 'The personalId cannot be empty'},
+                        { param: 'personalId', msg: 'Personal ID should contain only numbers'},
+                        { param: 'personalId', msg: 'Personal ID is wrong'},
+                        { param: 'password', msg: 'Password is required'},
+                        { param: 'password', msg: 'The password should contain both letters and numerals'}
+                ]);
             }
         });
     });

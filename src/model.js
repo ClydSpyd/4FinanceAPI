@@ -1,7 +1,7 @@
 import moment from 'moment';
 import config from './config';
 
-const model = (db) => {
+export default (db) => {
     const model = [];
 
     model.getClient = (email) => {
@@ -46,7 +46,30 @@ const model = (db) => {
         client.assign({ 'applications': updatedApplications }).value();
     };
 
+    model.updateApplication = (email, obj) => {
+        const client = db.get('clients').find({ email: email });
+
+        const applications = client.get('applications', []);
+        // make it persist
+        applications.last().assign(obj).value();
+    };
+
+    model.saveLoan = (email, obj) => {
+        const client = db.get('clients').find({ email: email });
+        const loans = client.get('loans', []);
+        const updated = loans.concat(obj).value();
+        client.assign({ 'loans': updated }).value();
+    };
+
+    model.listLoans = (email) => {
+        const client = db.get('clients').find({ email: email });
+        return client.get('loans', []).value();
+    };
+
+    model.getLatestLoan = (email) => {
+        const client = db.get('clients').find({ email: email });
+        return client.get('loans', []).last().value();
+    };
+
     return model;
 };
-
-export default model;

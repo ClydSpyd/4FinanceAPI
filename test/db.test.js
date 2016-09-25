@@ -37,7 +37,6 @@ describe('database tests', () => {
         it('save a loan', () => {
             data.saveClient(defaultClient);
             data.saveLoan('aaa@aaa.lt', { amount: 100, term: 15 });
-            console.log(`client: ${JSON.stringify(db.getState())}`);
             data.listLoans('aaa@aaa.lt').should.have.lengthOf(1);
         });
     });

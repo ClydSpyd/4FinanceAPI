@@ -22,6 +22,7 @@ describe('loans api', () => {
 
     beforeEach(() => {
         db.setState(JSON.parse(defaultData));
+        moment.now = () => +new Date();
     });
 
     describe('login a client', () => {
@@ -66,17 +67,20 @@ describe('loans api', () => {
         it('save a new client', async () => {
             let key = await saveClient('Domas', 'Domaitis', 'pass1', 'domas@mail.lt', '36506501215').promise;
             key.status.should.equal(httpstatus.CREATED);
-            db.get('clients').size().value().should.equal(3);
-            const client = db.get('clients').find({ email: 'domas@mail.lt' }).value();
-            client.name.should.equal('Domas');
-            client.surname.should.equal('Domaitis');
+
+            let resp = await getAuthorized('domas@mail.lt', 'pass1', '/clients').promise;
+            resp.body.should.have.property('name', 'Domas');
+            resp.body.should.have.property('surname', 'Domaitis');
         });
 
         it('invalid client', async () => {
             try {
                 await saveClient('asasd').promise;
             } catch (err) {
-                console.log(`Error: ${JSON.stringify(err.response)}`);
+                err.response.body.should.have.lengthOf(8);
+                err.response.body.filter((item) => item.param === 'surname' && item.msg === 'The surname cannot be empty')
+                    .should.have.lengthOf(1);
+                //console.log(`Error: ${JSON.stringify(err.response)}`);
             }
         });
     });
@@ -176,7 +180,22 @@ describe('loans api', () => {
         });
     });
 
-    describe('Business errors while applying for a loan', () => {
+    describe('Applications', async () => {
+        it('application was applied', async () => {
+            let token = await login('petras@mail.lt', 'pass').promise;
+            await applyForLoan(500, 15, token.text).promise;
+            let resp = await confirmApplication(token.text).promise;
+            resp.should.be.ok;
+            resp.body.should.deep.equal({
+                principalAmount: 500,
+                interestAmount: 50,
+                totalAmount: 550,
+                term: 15,
+                status: 'OPEN',
+                dueDate: moment().add(15, 'days').format(config.dateFormat)
+            });
+        });
+
         it('application was applied for more than three times a day', async () => {
             let token = await login('petras@mail.lt', 'pass').promise;
             token.should.be.ok;
@@ -185,8 +204,9 @@ describe('loans api', () => {
             await applyForLoan(500, 15, token.text).promise;
             await applyForLoan(501, 16, token.text).promise;
             await applyForLoan(502, 17, token.text).promise;
+            await applyForLoan(503, 18, token.text).promise;
             try {
-                await applyForLoan(503, 18, token.text).promise;
+                await confirmApplication(token.text).promise;
             } catch (err) {
                 err.response.status.should.equal(httpstatus.BAD_REQUEST);
                 err.response.body.should.be.lengthOf(1);
@@ -194,6 +214,39 @@ describe('loans api', () => {
                     msg: 'Too many applications for one day'
                 }]);
             }
+        });
+    });
+
+    describe('Loans', () => {
+        it('list of client loans is empty', async () => {
+            let resp = await getAuthorized('petras@mail.lt', 'pass', '/clients/loans').promise;
+            resp.body.should.have.lengthOf(0);
+        });
+
+        it('list client loans', async () => {
+            let token = await login('petras@mail.lt', 'pass').promise;
+            await applyForLoan(500, 15, token.text).promise;
+            await confirmApplication(token.text).promise;
+
+            let resp = await getAuthorized('petras@mail.lt', 'pass', '/clients/loans').promise;
+            resp.body.should.have.lengthOf(1);
+        });
+
+        it('latest client loan', async () => {
+            let token = await login('petras@mail.lt', 'pass').promise;
+            await applyForLoan(600, 25, token.text).promise;
+            await confirmApplication(token.text).promise;
+
+            let resp = await getAuthorized('petras@mail.lt', 'pass', '/clients/loans/latest').promise;
+            resp.body.should.be.ok;
+            resp.body.should.deep.equal({
+                principalAmount: 600,
+                interestAmount: 60,
+                totalAmount: 660,
+                term: 25,
+                status: 'OPEN',
+                dueDate: moment().add(25, 'days').format(config.dateFormat)
+            });
         });
     });
 
@@ -277,6 +330,16 @@ function getAuthorized(username, password, path) {
         const token = await login(username, password).promise;
         return await request.get(`http://localhost:3000${path}`)
             .set('Authorization', `Bearer ${token.text}`);
+    }
+    return {
+        promise: getPromise()
+    };
+}
+
+function confirmApplication(key) {
+    async function getPromise() {
+        return await request.put('http://localhost:3000/clients/application')
+            .set('Authorization', `Bearer ${key}`);
     }
     return {
         promise: getPromise()

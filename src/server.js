@@ -4,7 +4,7 @@ import bodyParser from 'body-parser';
 import express from 'express';
 import expressValidator from 'express-validator';
 import jwt from 'jsonwebtoken';
-//import util from 'util';
+import util from 'util';
 import xjwt from 'express-jwt';
 import { attachDefaultValidations, createApplication, createOffer, isValidAmountInDueTime, isValidApplicationCountForADay } from './application';
 import { getEmailFromToken } from './authorization';
@@ -36,7 +36,6 @@ export default function loansApiServer(port = 3000, db) {
             res.status(400).send('Wrong username or password');
             return;
         }
-        console.log(`Email received: ${email}`);
 
         const token = jwt.sign({ 'email': email }, config.secret, { expiresIn: 60*60*5});
         res.status(201).send(token);
@@ -120,15 +119,17 @@ export default function loansApiServer(port = 3000, db) {
         res.status(200).send(latestApplication);
     });
 
-    server.put('clients/application', (req, res) => {
+    server.put('/clients/application', (req, res) => {
         const email = getEmailFromToken(req);
         const latestApplication = data.getLatestApplication(email);
         if (!latestApplication) {
             res.status(404).send();
+            return;
         }
 
         const applicationsToday = data.getApplicationsTodayCount(email);
         if (!isValidApplicationCountForADay(applicationsToday)) {
+            data.updateApplication(email, { status: 'REJECTED' });
             res.status(400).send([{
                 msg: 'Too many applications for one day'
             }]);
@@ -136,10 +137,42 @@ export default function loansApiServer(port = 3000, db) {
         }
 
         if (!isValidAmountInDueTime(latestApplication.principalAmount)) {
+            data.updateApplication(email, { status: 'REJECTED' });
             res.status(400).send([{
                 msg: 'Max amount between midnight and 6 am not allowed'
             }]);
+            return;
         }
+
+        data.updateApplication(email, { status: 'CLOSED' });
+        const loan = {
+            principalAmount: latestApplication.principalAmount,
+            interestAmount: latestApplication.interestAmount,
+            totalAmount: latestApplication.totalAmount,
+            dueDate: latestApplication.dueDate,
+            term: latestApplication.term,
+            status: 'OPEN'
+        };
+        data.saveLoan(email, loan);
+
+        res.status(200).send(loan);
+    });
+
+    server.get('/clients/loans', (req, res) => {
+        const email = getEmailFromToken(req);
+        const loans = data.listLoans(email);
+        res.status(200).send(loans);
+    });
+
+    server.get('/clients/loans/latest', (req, res) => {
+        const email = getEmailFromToken(req);
+        const loan = data.getLatestLoan(email);
+        if (!loan) {
+            res.status(404).send();
+            return;
+        }
+
+        res.status(200).send(loan);
     });
 
     return server.listen(port, () => console.log('JSON server is running.'));

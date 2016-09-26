@@ -6,7 +6,6 @@ import moment from 'moment';
 import request from 'superagent';
 import config from '../src/config';
 import loansApiServer from '../src/server';
-import { isValidAmountInDueTime } from '../src/application';
 
 require('babel-polyfill');
 
@@ -15,7 +14,7 @@ install();
 chai.should();
 let db;
 
-describe('loans api', () => {
+describe('loans api integration tests', () => {
     before(() => {
         db = lowdb();
         loansApiServer(3000, db);
@@ -268,29 +267,6 @@ describe('loans api', () => {
                 status: 'OPEN',
                 dueDate: moment().add(25, 'days').format(config.dateFormat)
             });
-        });
-    });
-
-    describe('Application risk validators', () => {
-        it('now is shifted', () => {
-            const data = +moment('2016-09-24 17:00').toDate();
-            moment.now = () => data;
-            const now = moment();
-            now.format('YYYY-MM-DD HH:mm').should.equal('2016-09-24 17:00');
-        });
-
-        it('amount is valid and the time is good', () => {
-            const data = +moment('2016-09-24 17:00').toDate();
-            moment.now = () => data;
-            const isValid = isValidAmountInDueTime(config.intervals.amountInterval.max - 1);
-            isValid.should.be.ok;// eslint-disable-line no-unused-expressions
-        });
-
-        it('amount validation and time interval check failed', () => {
-            const data = +moment('2016-09-25 04:00').toDate();
-            moment.now = () => data;
-            const isValid = isValidAmountInDueTime(config.intervals.amountInterval.max);
-            isValid.should.be.not.ok;// eslint-disable-line no-unused-expressions
         });
     });
 });

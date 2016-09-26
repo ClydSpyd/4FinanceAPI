@@ -1,11 +1,24 @@
-require('babel-polyfill');
 import { install } from 'source-map-support';
 import chai from 'chai';
 import lowdb from 'lowdb';
 import model from '../src/model';
+
+require('babel-polyfill');
+
 install();
 
 const should = chai.should();
+const defaultData = '{"clients": []}';
+const defaultClient = {
+    name: 'aaa',
+    email: 'aaa@aaa.lt',
+    applications: [
+        {
+            principalAmount: 100,
+            status: 'OPEN'
+        }
+    ]
+};
 let db;
 let data;
 
@@ -22,7 +35,7 @@ describe('database tests', () => {
     describe('update application', () => {
         it('modify application status', () => {
             data.saveClient(defaultClient);
-            
+
             let latestApplication = data.getLatestApplication('aaa@aaa.lt');
             latestApplication.should.have.property('status', 'OPEN');
 
@@ -42,14 +55,3 @@ describe('database tests', () => {
     });
 });
 
-const defaultData = '{"clients": []}';
-const defaultClient = {
-    name: 'aaa',
-    email: 'aaa@aaa.lt',
-    applications: [
-        {
-            principalAmount: 100,
-            status: 'OPEN'
-        }
-    ]
-};

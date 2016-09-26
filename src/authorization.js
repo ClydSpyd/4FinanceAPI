@@ -6,3 +6,5 @@ export function getEmailFromToken(req) {
     const decoded = jwt.verify(token, config.secret);
     return decoded.email;
 }
+
+export default null;

@@ -1,14 +1,15 @@
-require('babel-polyfill');
 import { install } from 'source-map-support';
 import chai from 'chai';
 import httpstatus from 'http-status';
 import lowdb from 'lowdb';
 import moment from 'moment';
 import request from 'superagent';
-import util from 'util';
 import config from '../src/config';
-import loansApiServer from '../src/server.js';
+import loansApiServer from '../src/server';
 import { isValidAmountInDueTime } from '../src/application';
+
+require('babel-polyfill');
+
 install();
 
 chai.should();
@@ -27,11 +28,11 @@ describe('loans api', () => {
 
     describe('login a client', () => {
         it('get client data of petras', async () => {
-            let key = await login('petras@mail.lt', 'pass').promise;
-            key.should.be.ok;
+            const key = await login('petras@mail.lt', 'pass').promise;
+            key.should.be.ok;// eslint-disable-line no-unused-expressions
             key.status.should.equal(httpstatus.CREATED);
 
-            let clientRes = await getClient(key.text).promise;
+            const clientRes = await getClient(key.text).promise;
             const client = JSON.parse(clientRes.text);
             clientRes.status.should.equal(httpstatus.OK);
             client.id.should.equal(2);
@@ -41,11 +42,11 @@ describe('loans api', () => {
         });
 
         it('get client data of jonas', async () => {
-            let key = await login('jonas@mail.lt', 'parole1').promise;
-            key.should.be.ok;
+            const key = await login('jonas@mail.lt', 'parole1').promise;
+            key.should.be.ok;// eslint-disable-line no-unused-expressions
             key.status.should.equal(httpstatus.CREATED);
 
-            let clientRes = await getClient(key.text).promise;
+            const clientRes = await getClient(key.text).promise;
             const client = JSON.parse(clientRes.text);
             clientRes.status.should.equal(httpstatus.OK);
             client.id.should.equal(1);
@@ -65,10 +66,12 @@ describe('loans api', () => {
 
     describe('save a client', () => {
         it('save a new client', async () => {
-            let key = await saveClient('Domas', 'Domaitis', 'pass1', 'domas@mail.lt', '36506501215').promise;
+            const key = await
+                saveClient('Domas', 'Domaitis', 'pass1', 'domas@mail.lt', '36506501215')
+                .promise;
             key.status.should.equal(httpstatus.CREATED);
 
-            let resp = await getAuthorized('domas@mail.lt', 'pass1', '/clients').promise;
+            const resp = await getAuthorized('domas@mail.lt', 'pass1', '/clients').promise;
             resp.body.should.have.property('name', 'Domas');
             resp.body.should.have.property('surname', 'Domaitis');
         });
@@ -79,14 +82,15 @@ describe('loans api', () => {
             } catch (err) {
                 err.response.body.should.have.lengthOf(8);
                 err.response.body.should.deep.equal([
-                        { param: 'surname', msg: 'The surname cannot be empty'},
-                        { param: 'email', msg: 'Email is required'},
-                        { param: 'email', msg: 'Invalid email'},
-                        { param: 'personalId', msg: 'The personalId cannot be empty'},
-                        { param: 'personalId', msg: 'Personal ID should contain only numbers'},
-                        { param: 'personalId', msg: 'Personal ID is wrong'},
-                        { param: 'password', msg: 'Password is required'},
-                        { param: 'password', msg: 'The password should contain both letters and numerals'}
+                        { param: 'surname', msg: 'The surname cannot be empty' },
+                        { param: 'email', msg: 'Email is required' },
+                        { param: 'email', msg: 'Invalid email' },
+                        { param: 'personalId', msg: 'The personalId cannot be empty' },
+                        { param: 'personalId', msg: 'Personal ID should contain only numbers' },
+                        { param: 'personalId', msg: 'Personal ID is wrong' },
+                        { param: 'password', msg: 'Password is required' },
+                        { param: 'password',
+                            msg: 'The password should contain both letters and numerals' }
                 ]);
             }
         });
@@ -129,9 +133,13 @@ describe('loans api', () => {
             } catch (err) {
                 err.message.should.equal('Bad Request');
                 err.response.body.should.have.lengthOf(4);
-                err.response.body.filter((item) => item.param === 'amount' && item.msg === 'Amount cannot be empty')
+                err.response.body.filter((item) =>
+                        item.param === 'amount'
+                        && item.msg === 'Amount cannot be empty')
                     .should.have.lengthOf(1);
-                err.response.body.filter((item) => item.param === 'term' && item.msg === 'Term cannot be empty')
+                err.response.body.filter((item) =>
+                        item.param === 'term' &&
+                        item.msg === 'Term cannot be empty')
                     .should.have.lengthOf(1);
             }
         });
@@ -142,9 +150,13 @@ describe('loans api', () => {
             } catch (err) {
                 err.message.should.equal('Bad Request');
                 err.response.body.should.have.lengthOf(2);
-                err.response.body.filter((item) => item.param === 'amount' && item.msg === 'Amount should be an integer between 100 and 1000')
+                err.response.body.filter((item) =>
+                        item.param === 'amount' &&
+                        item.msg === 'Amount should be an integer between 100 and 1000')
                     .should.have.lengthOf(1);
-                err.response.body.filter((item) => item.param === 'term' && item.msg === 'Term should be an integer between 10 and 30')
+                err.response.body.filter((item) =>
+                        item.param === 'term' &&
+                        item.msg === 'Term should be an integer between 10 and 30')
                     .should.have.lengthOf(1);
             }
         });
@@ -158,8 +170,8 @@ describe('loans api', () => {
         });
 
         it('application is applied for', async () => {
-            let key = await login('petras@mail.lt', 'pass').promise;
-            key.should.be.ok;
+            const key = await login('petras@mail.lt', 'pass').promise;
+            key.should.be.ok;// eslint-disable-line no-unused-expressions
             key.status.should.equal(httpstatus.CREATED);
 
             const resp = await applyForLoan(500, 15, key.text).promise;
@@ -180,7 +192,8 @@ describe('loans api', () => {
             const token = await login('petras@mail.lt', 'pass').promise;
             await applyForLoan(500, 15, token.text).promise;
 
-            let applicationResponse = await getAuthorized('petras@mail.lt', 'pass', '/clients/application').promise;
+            const applicationResponse =
+                await getAuthorized('petras@mail.lt', 'pass', '/clients/application').promise;
             applicationResponse.status.should.equal(httpstatus.OK);
             applicationResponse.body.should.contain.property('principalAmount', 500);
             applicationResponse.body.should.contain.property('term', 15);
@@ -189,10 +202,10 @@ describe('loans api', () => {
 
     describe('Applications', async () => {
         it('application was applied', async () => {
-            let token = await login('petras@mail.lt', 'pass').promise;
+            const token = await login('petras@mail.lt', 'pass').promise;
             await applyForLoan(500, 15, token.text).promise;
-            let resp = await confirmApplication(token.text).promise;
-            resp.should.be.ok;
+            const resp = await confirmApplication(token.text).promise;
+            resp.should.be.ok;// eslint-disable-line no-unused-expressions
             resp.body.should.deep.equal({
                 principalAmount: 500,
                 interestAmount: 50,
@@ -204,8 +217,8 @@ describe('loans api', () => {
         });
 
         it('application was applied for more than three times a day', async () => {
-            let token = await login('petras@mail.lt', 'pass').promise;
-            token.should.be.ok;
+            const token = await login('petras@mail.lt', 'pass').promise;
+            token.should.be.ok;// eslint-disable-line no-unused-expressions
             token.status.should.equal(httpstatus.CREATED);
 
             await applyForLoan(500, 15, token.text).promise;
@@ -226,26 +239,27 @@ describe('loans api', () => {
 
     describe('Loans', () => {
         it('list of client loans is empty', async () => {
-            let resp = await getAuthorized('petras@mail.lt', 'pass', '/clients/loans').promise;
+            const resp = await getAuthorized('petras@mail.lt', 'pass', '/clients/loans').promise;
             resp.body.should.have.lengthOf(0);
         });
 
         it('list client loans', async () => {
-            let token = await login('petras@mail.lt', 'pass').promise;
+            const token = await login('petras@mail.lt', 'pass').promise;
             await applyForLoan(500, 15, token.text).promise;
             await confirmApplication(token.text).promise;
 
-            let resp = await getAuthorized('petras@mail.lt', 'pass', '/clients/loans').promise;
+            const resp = await getAuthorized('petras@mail.lt', 'pass', '/clients/loans').promise;
             resp.body.should.have.lengthOf(1);
         });
 
         it('latest client loan', async () => {
-            let token = await login('petras@mail.lt', 'pass').promise;
+            const token = await login('petras@mail.lt', 'pass').promise;
             await applyForLoan(600, 25, token.text).promise;
             await confirmApplication(token.text).promise;
 
-            let resp = await getAuthorized('petras@mail.lt', 'pass', '/clients/loans/latest').promise;
-            resp.body.should.be.ok;
+            const resp =
+                await getAuthorized('petras@mail.lt', 'pass', '/clients/loans/latest').promise;
+            resp.body.should.be.ok;// eslint-disable-line no-unused-expressions
             resp.body.should.deep.equal({
                 principalAmount: 600,
                 interestAmount: 60,
@@ -269,14 +283,14 @@ describe('loans api', () => {
             const data = +moment('2016-09-24 17:00').toDate();
             moment.now = () => data;
             const isValid = isValidAmountInDueTime(config.intervals.amountInterval.max - 1);
-            isValid.should.be.ok;
+            isValid.should.be.ok;// eslint-disable-line no-unused-expressions
         });
 
         it('amount validation and time interval check failed', () => {
             const data = +moment('2016-09-25 04:00').toDate();
             moment.now = () => data;
             const isValid = isValidAmountInDueTime(config.intervals.amountInterval.max);
-            isValid.should.be.not.ok;
+            isValid.should.be.not.ok;// eslint-disable-line no-unused-expressions
         });
     });
 });
@@ -294,7 +308,7 @@ function getUnauthorized(path) {
 function saveClient(name, surname, password, email, personalId) {
     async function getPromise() {
         return await request.post('http://localhost:3000/clients')
-            .send({ name: name, surname: surname, password: password, email: email, personalId: personalId });
+            .send({ name, surname, password, email, personalId });
     }
     return {
         promise: getPromise()
@@ -305,7 +319,7 @@ function login(username, password) {
     async function getPromise() {
         return await request.post('http://localhost:3000/login')
             .set('Accept', 'text/html')
-            .send({ username: username, password: password});
+            .send({ username, password });
     }
     return {
         promise: getPromise()

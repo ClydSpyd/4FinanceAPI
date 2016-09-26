@@ -4,9 +4,9 @@ import bodyParser from 'body-parser';
 import express from 'express';
 import expressValidator from 'express-validator';
 import jwt from 'jsonwebtoken';
-import util from 'util';
 import xjwt from 'express-jwt';
-import { attachDefaultValidations, createApplication, createOffer, isValidAmountInDueTime, isValidApplicationCountForADay } from './application';
+import { attachDefaultValidations, createApplication, createOffer,
+    isValidAmountInDueTime, isValidApplicationCountForADay } from './application';
 import { getEmailFromToken } from './authorization';
 import config from './config';
 import model from './model';
@@ -19,12 +19,13 @@ export default function loansApiServer(port = 3000, db) {
     server.use(bodyParser.json());
     server.use(expressValidator());
 
-    server.use('/clients', xjwt({ secret: config.secret }).unless({ method: 'POST', path: '/clients$' }));
+    server.use('/clients', xjwt({ secret: config.secret })
+            .unless({ method: 'POST', path: '/clients$' }));
 
     server.post('/login', (req, res) => {
         const email = [req.body].filter((b) => b)
             .filter((b) => b.username && b.password)
-            .map((body) => { 
+            .map((body) => { // eslint-disable-line arrow-body-style
                 return { password: body.password, client: data.getClient(req.body.username) };
             })
             .filter((arr) => arr.client)
@@ -37,7 +38,7 @@ export default function loansApiServer(port = 3000, db) {
             return;
         }
 
-        const token = jwt.sign({ 'email': email }, config.secret, { expiresIn: 60*60*5});
+        const token = jwt.sign({ email }, config.secret, { expiresIn: 60 * 60 * 5 });
         res.status(201).send(token);
     });
 
@@ -65,11 +66,15 @@ export default function loansApiServer(port = 3000, db) {
     server.post('/clients', (req, res) => {
         req.checkBody('name', 'The name cannot be empty').notEmpty();
         req.checkBody('surname', 'The surname cannot be empty').notEmpty();
-        req.checkBody('email', 'Invalid email').notEmpty().withMessage('Email is required').isEmail();
+        req.checkBody('email', 'Invalid email').notEmpty()
+            .withMessage('Email is required').isEmail();
         req.checkBody('personalId', 'The personalId cannot be empty').notEmpty()
             .isNumeric().withMessage('Personal ID should contain only numbers')
-            .isLength({ min: 11, max: 11 }).withMessage('Personal ID is wrong');
-        req.checkBody('password', 'The password should contain both letters and numerals').notEmpty().withMessage('Password is required').isAlphanumeric();
+            .isLength({ min: 11, max: 11 })
+            .withMessage('Personal ID is wrong');
+        req.checkBody('password', 'The password should contain both letters and numerals')
+            .notEmpty()
+            .withMessage('Password is required').isAlphanumeric();
         const validationErrors = req.validationErrors();
         if (validationErrors) {
             res.status(400).send(validationErrors);

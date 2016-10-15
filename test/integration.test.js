@@ -25,6 +25,34 @@ describe('loans api integration tests', () => {
         moment.now = () => +new Date();
     });
 
+    describe('initial entrypoint', () => {
+        it('index', async () => {
+            const resp = await getUnauthorized('/').promise;
+            resp.status.should.equal(httpstatus.OK);
+            resp.body.should.deep.equal(
+                {
+                    _links: {
+                        self: {
+                            href: '/'
+                        },
+                        constraints: {
+                            href: '/application/constraints'
+                        },
+                        offer: {
+                            href: '/application/offer'
+                        },
+                        login: {
+                            href: '/login'
+                        },
+                        client: {
+                            href: '/clients'
+                        }
+                    }
+                }
+            );
+        });
+    });
+
     describe('login a client', () => {
         it('get client data of petras', async () => {
             const key = await login('petras@mail.lt', 'pass').promise;
@@ -52,6 +80,19 @@ describe('loans api integration tests', () => {
             client.name.should.equal('Jonas');
             client.surname.should.equal('Jonaitis');
             client.email.should.equal('jonas@mail.lt');
+            client._links.should.deep.equal( // eslint-disable-line no-underscore-dangle
+                {
+                    self: {
+                        href: '/clients'
+                    },
+                    application: {
+                        href: '/clients/application'
+                    },
+                    loans: {
+                        href: '/clients/loans'
+                    }
+                }
+            );
         });
 
         it('fail authorization', async () => {
@@ -111,6 +152,14 @@ describe('loans api integration tests', () => {
                     max: 31,
                     defaultValue: 10,
                     step: 1
+                },
+                _links: {
+                    self: {
+                        href: '/application/constraints'
+                    },
+                    offer: {
+                        href: '/application/offer'
+                    }
                 }
             });
         });
@@ -122,7 +171,15 @@ describe('loans api integration tests', () => {
                 principalAmount: 500,
                 interestAmount: 50,
                 totalAmount: 550,
-                dueDate: moment().add(15, 'days').format('YYYY-MM-DD')
+                dueDate: moment().add(15, 'days').format('YYYY-MM-DD'),
+                _links: {
+                    self: {
+                        href: '/application/offer'
+                    },
+                    application: {
+                        href: '/application'
+                    }
+                }
             });
         });
 
@@ -177,6 +234,16 @@ describe('loans api integration tests', () => {
             resp.status.should.equal(httpstatus.CREATED);
             resp.body.should.contain.property('principalAmount', 500);
             resp.body.should.contain.property('term', 15);
+            resp.body._links.should.deep.equal( // eslint-disable-line no-underscore-dangle
+                {
+                    self: {
+                        href: '/clients/application'
+                    },
+                    loans: {
+                        href: '/clients/loans'
+                    }
+                }
+            );
         });
 
         it('do not find the latest application', async () => {
@@ -196,6 +263,17 @@ describe('loans api integration tests', () => {
             applicationResponse.status.should.equal(httpstatus.OK);
             applicationResponse.body.should.contain.property('principalAmount', 500);
             applicationResponse.body.should.contain.property('term', 15);
+            applicationResponse.body._links // eslint-disable-line no-underscore-dangle
+                .should.deep.equal(
+                {
+                    self: {
+                        href: '/clients/application'
+                    },
+                    loans: {
+                        href: '/clients/loans'
+                    }
+                }
+            );
         });
     });
 
@@ -211,7 +289,18 @@ describe('loans api integration tests', () => {
                 totalAmount: 550,
                 term: 15,
                 status: 'OPEN',
-                dueDate: moment().add(15, 'days').format(config.dateFormat)
+                dueDate: moment().add(15, 'days').format(config.dateFormat),
+                _links: {
+                    self: {
+                        href: '/clients/loans/latest'
+                    },
+                    loans: {
+                        href: '/clients/loans'
+                    },
+                    client: {
+                        href: '/clients'
+                    }
+                }
             });
         });
 
@@ -239,7 +328,7 @@ describe('loans api integration tests', () => {
     describe('Loans', () => {
         it('list of client loans is empty', async () => {
             const resp = await getAuthorized('petras@mail.lt', 'pass', '/clients/loans').promise;
-            resp.body.should.have.lengthOf(0);
+            resp.body['_embedded'].loans.should.have.lengthOf(0);// eslint-disable-line dot-notation
         });
 
         it('list client loans', async () => {
@@ -248,7 +337,7 @@ describe('loans api integration tests', () => {
             await confirmApplication(token.text).promise;
 
             const resp = await getAuthorized('petras@mail.lt', 'pass', '/clients/loans').promise;
-            resp.body.should.have.lengthOf(1);
+            resp.body['_embedded'].loans.should.have.lengthOf(1);// eslint-disable-line dot-notation
         });
 
         it('latest client loan', async () => {

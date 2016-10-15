@@ -2,14 +2,17 @@ import { install } from 'source-map-support';
 import 'babel-polyfill';
 import bodyParser from 'body-parser';
 import express from 'express';
+import hal from 'express-hal';
 import expressValidator from 'express-validator';
 import jwt from 'jsonwebtoken';
 import xjwt from 'express-jwt';
+// import util from 'util';
 import { attachDefaultValidations, createApplication, createOffer,
     isValidAmountInDueTime, isValidApplicationCountForADay } from './application';
 import { getEmailFromToken } from './authorization';
 import config from './config';
 import model from './model';
+import wrapInHal from './wrapInHal';
 
 install();
 
@@ -18,9 +21,15 @@ export default function loansApiServer(port = 3000, db) {
     const server = express();
     server.use(bodyParser.json());
     server.use(expressValidator());
+    server.use(hal.middleware);
+    server.use(wrapInHal);
 
     server.use('/clients', xjwt({ secret: config.secret })
             .unless({ method: 'POST', path: '/clients$' }));
+
+    server.get('/', (req, res) => {
+        res.wrapInHal();
+    });
 
     server.post('/login', (req, res) => {
         const email = [req.body].filter((b) => b)
@@ -57,7 +66,7 @@ export default function loansApiServer(port = 3000, db) {
                 res.status(400);
                 return;
             }
-            res.status(200).send(client);
+            res.wrapInHal(client);
             return;
         }
         res.status(400).send();
@@ -86,7 +95,7 @@ export default function loansApiServer(port = 3000, db) {
     });
 
     server.get('/application/constraints', (req, res) => {
-        res.status(200).send(config.intervals);
+        res.status(200).wrapInHal(config.intervals);
     });
 
     server.get('/application/offer', (req, res) => {
@@ -97,7 +106,7 @@ export default function loansApiServer(port = 3000, db) {
             return;
         }
         const application = createOffer(req.query.amount, req.query.term);
-        res.status(200).send(application);
+        res.status(200).wrapInHal(application);
     });
 
     server.post('/clients/application', (req, res) => {
@@ -111,7 +120,8 @@ export default function loansApiServer(port = 3000, db) {
         const email = getEmailFromToken(req);
         data.saveApplication(email, application);
 
-        res.status(201).send(application);
+        // res.status(201).send(application);
+        res.status(201).wrapInHal(application);
     });
 
     server.get('/clients/application', (req, res) => {
@@ -119,9 +129,10 @@ export default function loansApiServer(port = 3000, db) {
         const latestApplication = data.getLatestApplication(email);
         if (!latestApplication) {
             res.status(404).send();
+            return;
         }
 
-        res.status(200).send(latestApplication);
+        res.status(200).wrapInHal(latestApplication);
     });
 
     server.put('/clients/application', (req, res) => {
@@ -160,13 +171,13 @@ export default function loansApiServer(port = 3000, db) {
         };
         data.saveLoan(email, loan);
 
-        res.status(200).send(loan);
+        res.status(201).wrapInHal(loan, '/clients/loans/latest');
     });
 
     server.get('/clients/loans', (req, res) => {
         const email = getEmailFromToken(req);
         const loans = data.listLoans(email);
-        res.status(200).send(loans);
+        res.status(200).wrapInHal(loans);
     });
 
     server.get('/clients/loans/latest', (req, res) => {

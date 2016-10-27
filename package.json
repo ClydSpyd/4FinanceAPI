@@ -8,6 +8,7 @@
     "test": "mocha --compilers js:babel-core/register test",
     "build-server": "babel src --out-dir build --source-maps",
     "build": "npm run clean && npm run build-server",
+    "postinstall": "npm run build",
     "watch": "babel src --out-dir build --source-maps --watch",
     "start": "node ./build/index.js"
   },

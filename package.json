@@ -6,7 +6,8 @@
   "scripts": {
     "test": "mocha --compilers js:babel-core/register test",
     "build": "babel src --out-dir build --source-maps",
-    "watch": "babel src --out-dir build --source-maps --watch"
+    "watch": "babel src --out-dir build --source-maps --watch",
+    "start": "node build/index.js"
   },
   "keywords": [
     "api",

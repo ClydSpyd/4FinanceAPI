@@ -2,7 +2,7 @@ import moment from 'moment';
 import config from './config';
 
 export default (db) => {
-    const model = [];
+    const model = {};
 
     model.getClient = (email) =>
         db.get('clients').find({ email })

@@ -208,11 +208,12 @@ describe('loans api integration tests', () => {
                 err.response.body.should.have.lengthOf(2);
                 err.response.body.filter((item) =>
                         item.param === 'amount' &&
-                        item.msg === 'Amount should be an integer between 100 and 1000')
+                        item.msg === `Amount should be an integer between ${config.intervals.amountInterval.min} and ${config.intervals.amountInterval.max}`) // eslint-disable-line max-len
                     .should.have.lengthOf(1);
                 err.response.body.filter((item) =>
                         item.param === 'term' &&
-                        item.msg === 'Term should be an integer between 10 and 30')
+                        item.msg === `Term should be an integer between ${config.intervals.termInterval.min} and ${config.intervals.termInterval.max}`) // eslint-disable-line max-len
+
                     .should.have.lengthOf(1);
             }
         });

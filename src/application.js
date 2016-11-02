@@ -4,11 +4,13 @@ import config from './config';
 export function attachDefaultValidations(req) {
     req.sanitizeQuery('amount').toInt();
     req.sanitizeQuery('term').toInt();
-    req.checkQuery('amount', 'Amount should be an integer between 100 and 1000')
-        .isInt({ min: 100, max: 1000 })
+    req.checkQuery('amount', `Amount should be an integer between ${config.intervals.amountInterval.min} and ${config.intervals.amountInterval.max}`) // eslint-disable-line max-len
+        .isInt({ min: config.intervals.amountInterval.min,
+            max: config.intervals.amountInterval.max })
         .notEmpty().withMessage('Amount cannot be empty');
-    req.checkQuery('term', 'Term should be an integer between 10 and 30')
-        .isInt({ min: 10, max: 30 })
+    req.checkQuery('term', `Term should be an integer between ${config.intervals.termInterval.min} and ${config.intervals.termInterval.max}`) // eslint-disable-line max-len
+
+        .isInt({ min: config.intervals.termInterval.min, max: config.intervals.termInterval.max })
         .notEmpty().withMessage('Term cannot be empty');
 }
 

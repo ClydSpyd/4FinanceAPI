@@ -17,7 +17,6 @@ import wrapInHal from './wrapInHal';
 install();
 
 export default function loansApiServer(port = 3000, db) {
-    db.defaults({ clients: [] }).value();
     const data = model(db);
     const server = express();
     server.use(bodyParser.json());

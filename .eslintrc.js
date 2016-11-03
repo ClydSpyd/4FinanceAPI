@@ -32,6 +32,10 @@ module.exports = {
         "comma-dangle": "off",
         "no-use-before-define": 0, // Enable to define styles after using them in component.
         "generator-star-spacing": 0,
+        "arrow-parens": [
+          "error",
+          "always"
+        ],
         // eslint-plugin-import
         "import/no-unresolved": [2, {"commonjs": true}],
         "import/named": 2,

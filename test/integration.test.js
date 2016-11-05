@@ -100,6 +100,8 @@ describe('loans api integration tests', () => {
                 await login('aaa@aaa.lt', 'password').promise;
             } catch (err) {
                 err.message.should.equal('Bad Request');
+                err.status.should.equal(400);
+                err.response.text.should.equal('Wrong username or password');
             }
         });
     });

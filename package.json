@@ -7,10 +7,12 @@
     "clean": "rm -rf build && mkdir build",
     "test": "mocha --compilers js:babel-core/register test",
     "build-server": "babel src --out-dir build --source-maps",
-    "build": "npm run clean && npm run build-server",
+    "build": "npm run clean && npm run checkstyle && npm run build-server",
     "postinstall": "npm run build",
     "watch": "babel src --out-dir build --source-maps --watch",
-    "start": "node ./build/index.js"
+    "start": "node ./build/index.js",
+    "checkstyle": "eslint src",
+    "eslint": "npm run checkstyle"
   },
   "keywords": [
     "api",

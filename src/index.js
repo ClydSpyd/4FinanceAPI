@@ -5,4 +5,4 @@ const port = process.env.PORT || 3000;
 const db = lowdb();
 db.defaults({ clients: [] }).value();
 
-loansApiServer(port, db); 
+loansApiServer(port, db);

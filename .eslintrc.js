@@ -28,7 +28,7 @@ module.exports = {
             "error",
             "always"
         ],
-        "no-console": "off",
+        "no-console": "error",
         "comma-dangle": "off",
         "no-use-before-define": 0, // Enable to define styles after using them in component.
         "generator-star-spacing": 0,

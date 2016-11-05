@@ -191,6 +191,6 @@ export default function loansApiServer(port = 3000, db) {
         res.status(200).send(loan);
     });
 
-    return server.listen(port, () => console.log('JSON server is running.'));
+    return server.listen(port, () => console.log(`JSON server is running on port ${port}.`)); // eslint-disable-line no-console
 }
 

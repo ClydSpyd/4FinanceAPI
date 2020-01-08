@@ -10,9 +10,13 @@
     "build": "npm run clean && npm run checkstyle && npm run build-server",
     "postinstall": "npm run build",
     "watch": "babel src --out-dir build --source-maps --watch",
-    "start": "node ./build/index.js",
+    "start": "serve --single ./",
+    "dev": "node ./build/index.js",
     "checkstyle": "eslint src",
     "eslint": "npm run checkstyle"
+  },
+  "now":{
+    "alias":"LoanApi"
   },
   "keywords": [
     "api",
@@ -28,23 +32,23 @@
     "mocha": "^3.0.2"
   },
   "dependencies": {
-    "babel-polyfill": "^6.13.0",
     "babel-cli": "^6.14.0",
     "babel-core": "^6.14.0",
     "babel-eslint": "^6.1.2",
     "babel-plugin-syntax-async-functions": "^6.13.0",
     "babel-plugin-transform-async-to-generator": "^6.8.0",
     "babel-plugin-transform-regenerator": "^6.14.0",
+    "babel-polyfill": "^6.13.0",
     "babel-preset-es2015": "^6.14.0",
     "babel-preset-es2015-node5": "^1.2.0",
     "body-parser": "^1.15.2",
     "chai": "^3.5.0",
     "eslint": "^3.6.0",
     "eslint-config-airbnb": "^12.0.0",
+    "eslint-plugin-babel": "^3.3.0",
     "eslint-plugin-import": "^1.16.0",
     "eslint-plugin-jsx-a11y": "^2.2.2",
     "eslint-plugin-react": "^6.3.0",
-    "eslint-plugin-babel": "^3.3.0",
     "express": "^4.14.0",
     "express-hal": "0.0.1",
     "express-jwt": "^5.0.0",
@@ -55,6 +59,7 @@
     "lodash": "^4.16.2",
     "lowdb": "^0.13.1",
     "moment": "^2.15.0",
+    "serve": "^11.3.0",
     "source-map-support": "^0.4.2",
     "superagent": "^2.2.0"
   },

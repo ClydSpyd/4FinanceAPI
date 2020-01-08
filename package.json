@@ -61,7 +61,7 @@
     "moment": "^2.15.0",
     "serve": "^11.3.0",
     "source-map-support": "^0.4.2",
-    "superagent": "^2.2.0"
+    "superagent": "^5.0.2"
   },
   "babel": {
     "presets": [
